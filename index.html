@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#0f6e56">
+<meta name="mobile-web-app-capable" content="yes">
+<title>병원 택시</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230f6e56'/%3E%3Ctext x='50' y='66' font-size='48' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'%3E택시%3C/text%3E%3C/svg%3E">
+<style>
+  [hidden] { display: none !important; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { min-height: 100%; }
+  body { font-family: -apple-system, "Noto Sans KR", "Malgun Gothic", sans-serif; background: #f6f5f1; color: #1a1a18; display: flex; justify-content: center; }
+  .app { width: 100%; max-width: 480px; min-height: 100vh; padding: 20px 18px 28px; display: flex; flex-direction: column; }
+  .screen { display: none; flex-direction: column; gap: 16px; flex: 1; }
+  .screen.on { display: flex; }
+  .hello { font-size: 28px; font-weight: 700; text-align: center; padding-top: 6px; user-select: none; -webkit-user-select: none; }
+
+  .big { border: 0; border-radius: 22px; width: 100%; padding: 28px 16px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; font-family: inherit; text-decoration: none; }
+  .big:active, .call:active, .family:active, .fam-btn:active { transform: scale(0.98); }
+  .big .ico { font-size: 56px; line-height: 1; }
+  .big .t { font-size: 38px; font-weight: 800; }
+  .big .r { font-size: 22px; font-weight: 500; }
+  .go { background: #0f6e56; color: #fff; }
+  .home { background: #c2541f; color: #fff; }
+
+  .family { margin-top: auto; border: 3px solid #1a1a18; background: #fff; color: #1a1a18; border-radius: 18px; padding: 18px; font-size: 28px; font-weight: 700; font-family: inherit; text-align: center; display: block; width: 100%; cursor: pointer; }
+  .fam-btn { background: #fff; border: 3px solid #1a1a18; color: #1a1a18; border-radius: 18px; padding: 18px; font-size: 30px; font-weight: 800; text-decoration: none; text-align: center; display: block; }
+  .call { background: #185fa5; color: #fff; border-radius: 22px; padding: 24px 16px; font-size: 34px; font-weight: 800; text-align: center; text-decoration: none; display: block; }
+  .back { background: transparent; border: 2px solid #b4b2a9; color: #44443f; border-radius: 16px; padding: 14px; font-size: 22px; font-family: inherit; cursor: pointer; }
+  .add { background: transparent; border: 2px dashed #888780; color: #44443f; border-radius: 16px; padding: 14px; font-size: 22px; font-family: inherit; cursor: pointer; }
+  .fix { align-self: center; background: transparent; border: 0; color: #55544f; font-size: 18px; text-decoration: underline; font-family: inherit; padding: 6px 12px; cursor: pointer; }
+  .form .add-row { background: transparent; border: 2px dashed #888780; color: #44443f; border-radius: 10px; padding: 12px; font-size: 18px; font-family: inherit; cursor: pointer; }
+  .empty { background: #fff4d6; color: #6b4a00; border: 2px dashed #d9a400; border-radius: 16px; padding: 18px; font-size: 22px; text-align: center; }
+
+  .form h1 { font-size: 24px; }
+  .form p.note { font-size: 16px; color: #55544f; line-height: 1.6; }
+  .form .box { border: 1px solid #d3d1c7; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: #fff; }
+  .form label { font-size: 16px; color: #44443f; display: flex; flex-direction: column; gap: 6px; }
+  .form input { font-size: 20px; padding: 12px; border: 1px solid #b4b2a9; border-radius: 10px; font-family: inherit; background: #fff; color: #1a1a18; width: 100%; min-width: 0; }
+  .form .pair { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; }
+  .form .save { background: #0f6e56; color: #fff; border: 0; border-radius: 14px; padding: 18px; font-size: 22px; font-weight: 700; font-family: inherit; cursor: pointer; }
+  .form .err { color: #a32d2d; font-size: 16px; min-height: 1em; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 1. 첫 화면: 누르면 바로 해당 센터로 전화 -->
+  <section class="screen" id="s-main">
+    <div class="hello" id="hello">웅자님, 어디로 모실까요?</div>
+    <a class="big go" id="btn-go" onclick="dialed(this)">
+      <span class="ico">🏥</span><span class="t">병원 갈 때</span><span class="r">집에서 병원으로 가요</span>
+    </a>
+    <a class="big home" id="btn-home" onclick="dialed(this)">
+      <span class="ico">🏠</span><span class="t">집에 올 때</span><span class="r">병원에서 집으로 와요</span>
+    </a>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:10px">
+      <button class="fix" onclick="openSetup()">전화번호 고치기</button>
+      <button class="family" style="margin-top:0" onclick="openFamily()">📞 가족에게 전화</button>
+    </div>
+  </section>
+
+
+  <!-- 3. 가족 고르기 -->
+  <section class="screen" id="s-family">
+    <div class="hello">누구에게 걸까요?</div>
+    <div id="family-list" style="display:flex;flex-direction:column;gap:12px"></div>
+    <button class="add" onclick="openAdd()">+ 다른 번호 추가</button>
+    <button class="back" onclick="show('s-main')">← 처음으로</button>
+  </section>
+
+  <!-- 4. 다른 번호 추가 -->
+  <section class="screen form" id="s-add">
+    <h1>번호 추가</h1>
+    <div class="box">
+      <label>누구예요? (예: 외삼촌, 이웃집)
+        <input type="text" id="a-label" autocomplete="off">
+      </label>
+      <label>전화번호
+        <input type="tel" id="a-phone" inputmode="tel" placeholder="010-0000-0000">
+      </label>
+    </div>
+    <div class="err" id="a-err"></div>
+    <button class="save" onclick="saveAdd()">추가하기</button>
+    <button class="back" onclick="openFamily()">취소</button>
+  </section>
+
+  <!-- 5. 처음 설정: 가족 번호만 -->
+  <section class="screen form" id="s-setup">
+    <h1>가족 번호 설정</h1>
+    <p class="note">번호는 이 휴대폰 안에만 저장됩니다. 비워둔 사람은 화면에 나오지 않아요.</p>
+    <div class="box">
+      <div id="f-family" style="display:flex;flex-direction:column;gap:10px"></div>
+      <button class="add-row" onclick="addRow()">+ 다른 번호 추가</button>
+    </div>
+    <div class="err" id="f-err"></div>
+    <button class="save" onclick="saveSetup()">저장하기</button>
+    <button class="back" id="f-cancel" onclick="show('s-main')">취소</button>
+  </section>
+
+</div>
+
+<script>
+/* 센터 번호 (공개 번호) */
+const CENTER_GO   = "1899-1110";  // 병원 갈 때: 전남 센터
+const CENTER_HOME = "1668-2222";  // 집에 올 때: 광주 센터
+
+const FAMILY_DEFAULT = ["아들", "며느리", "큰딸", "둘째딸", "셋째딸", "막내딸"].map(label => ({ label, phone: "" }));
+const KEY = "taxi-helper-family-v2";
+const $ = id => document.getElementById(id);
+const digits = n => String(n || "").replace(/[^0-9]/g, "");
+const tel = n => "tel:" + digits(n);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+/* 화면에만 '-'를 넣어 보여줌 (저장은 숫자만) */
+function fmt(n) {
+  const d = digits(n);
+  if (d.startsWith("02")) {
+    if (d.length <= 2) return d;
+    if (d.length <= 5) return d.slice(0, 2) + "-" + d.slice(2);
+    if (d.length <= 9) return d.slice(0, 2) + "-" + d.slice(2, 5) + "-" + d.slice(5);
+    return d.slice(0, 2) + "-" + d.slice(2, 6) + "-" + d.slice(6, 10);
+  }
+  if (d.length === 8 && /^1[5-9]/.test(d)) return d.slice(0, 4) + "-" + d.slice(4);
+  if (d.length <= 3) return d;
+  if (d.length <= 7) return d.slice(0, 3) + "-" + d.slice(3);
+  if (d.length <= 10) return d.slice(0, 3) + "-" + d.slice(3, 6) + "-" + d.slice(6);
+  return d.slice(0, 3) + "-" + d.slice(3, 7) + "-" + d.slice(7, 11);
+}
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (el.matches && el.matches('input[type="tel"]')) el.value = fmt(el.value);
+});
+
+let family = null;
+try { const raw = localStorage.getItem(KEY); if (raw) family = JSON.parse(raw); } catch (e) {}
+
+function persist() {
+  try { localStorage.setItem(KEY, JSON.stringify(family)); return true; } catch (e) { return false; }
+}
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id));
+  window.scrollTo(0, 0);
+}
+
+$("btn-go").href = tel(CENTER_GO);
+$("btn-home").href = tel(CENTER_HOME);
+function dialed(a) {
+  if (navigator.vibrate) navigator.vibrate(40);
+  /* 전화 앱으로 바로 넘어가고, 돌아오면 첫 화면 그대로 */
+}
+
+function openFamily() {
+  const list = (family || []).filter(f => digits(f.phone).length >= 7);
+  $("family-list").innerHTML = list.length
+    ? list.map(f => `<a class="fam-btn" href="${tel(f.phone)}">📞 ${esc(f.label)}</a>`).join("")
+    : `<div class="empty">아직 등록된 번호가 없어요.</div>`;
+  show("s-family");
+}
+
+function openAdd() { $("a-label").value = ""; $("a-phone").value = ""; $("a-err").textContent = ""; show("s-add"); }
+function saveAdd() {
+  const label = $("a-label").value.trim(), phone = $("a-phone").value.trim();
+  if (!label || digits(phone).length < 7) { $("a-err").textContent = "이름과 전화번호를 모두 넣어 주세요."; return; }
+  family = family || FAMILY_DEFAULT.map(f => ({ ...f }));
+  const slot = family.find(f => f.label === label && !digits(f.phone));
+  if (slot) slot.phone = digits(phone);          // 빈 '아들' 칸이 있으면 그 칸에 채움
+  else family.push({ label, phone: digits(phone) });
+  if (!persist()) { $("a-err").textContent = "저장하지 못했어요."; return; }
+  openFamily();
+}
+
+function rowHtml(f) {
+  return `<div class="pair">
+      <input type="text" class="fl" value="${esc(f.label)}" placeholder="누구" aria-label="호칭">
+      <input type="tel" class="fp" value="${esc(fmt(f.phone))}" inputmode="tel" placeholder="010-0000-0000" aria-label="번호">
+    </div>`;
+}
+function openSetup() {
+  const v = family || FAMILY_DEFAULT;
+  $("f-family").innerHTML = v.map(rowHtml).join("");
+  $("f-cancel").hidden = false;
+  $("f-err").textContent = "";
+  show("s-setup");
+}
+function addRow() {
+  $("f-family").insertAdjacentHTML("beforeend", rowHtml({ label: "", phone: "" }));
+  const rows = $("f-family").querySelectorAll(".fl");
+  rows[rows.length - 1].focus();
+}
+function saveSetup() {
+  const labels = [...$("f-family").querySelectorAll(".fl")];
+  const phones = [...$("f-family").querySelectorAll(".fp")];
+  family = labels.map((l, i) => ({ label: l.value.trim() || "가족", phone: digits(phones[i].value) }))
+            .filter((f, i) => i < FAMILY_DEFAULT.length || digits(f.phone).length >= 7);
+  if (!persist()) { $("f-err").textContent = "저장하지 못했어요. 인터넷 앱의 비밀 모드를 꺼 주세요."; return; }
+  show("s-main");
+}
+
+show("s-main");
+</script>
+</body>
+</html>
