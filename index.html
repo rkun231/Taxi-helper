@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#0f6e56">
+<meta name="mobile-web-app-capable" content="yes">
+<title>병원 택시</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230f6e56'/%3E%3Ctext x='50' y='66' font-size='48' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'%3E택시%3C/text%3E%3C/svg%3E">
+<style>
+  /* =========================================================
+     화면 모양 (보통은 고칠 필요 없음)
+     ========================================================= */
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, "Noto Sans KR", "Malgun Gothic", sans-serif;
+    background: #f6f5f1; color: #1a1a18;
+    display: flex; justify-content: center;
+  }
+  .app { width: 100%; max-width: 480px; min-height: 100%; padding: 20px 18px 28px; display: flex; flex-direction: column; gap: 16px; }
+  .screen { display: none; flex-direction: column; gap: 16px; flex: 1; }
+  .screen.on { display: flex; }
+  .hello { font-size: 26px; font-weight: 700; text-align: center; padding-top: 6px; }
+  .sub { font-size: 20px; color: #55544f; text-align: center; }
+
+  .big {
+    border: 0; border-radius: 22px; width: 100%;
+    padding: 26px 16px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    font-family: inherit;
+  }
+  .big:active { transform: scale(0.98); }
+  .big .ico { font-size: 54px; line-height: 1; }
+  .big .t { font-size: 36px; font-weight: 800; }
+  .big .r { font-size: 22px; font-weight: 500; }
+  .go   { background: #0f6e56; color: #fff; }
+  .home { background: #c2541f; color: #fff; }
+
+  .family {
+    margin-top: auto; border: 3px solid #1a1a18; background: #fff; color: #1a1a18;
+    border-radius: 18px; padding: 18px; font-size: 26px; font-weight: 700;
+    font-family: inherit; text-decoration: none; text-align: center; display: block;
+  }
+
+  .card { background: #fff; border-radius: 18px; padding: 18px 20px; border: 2px solid #e2e0d8; }
+  .card .row { display: flex; gap: 10px; font-size: 26px; line-height: 1.6; }
+  .card .k { color: #6b6a64; min-width: 3.2em; }
+  .card .v { font-weight: 700; word-break: keep-all; }
+  .say { font-size: 22px; color: #55544f; text-align: center; }
+
+  .call {
+    background: #1d8a4a; color: #fff; border-radius: 22px; padding: 26px 16px;
+    font-size: 36px; font-weight: 800; text-align: center; text-decoration: none; display: block;
+  }
+  .back {
+    background: transparent; border: 2px solid #b4b2a9; color: #44443f; border-radius: 16px;
+    padding: 14px; font-size: 22px; font-family: inherit; cursor: pointer;
+  }
+  .where { font-size: 28px; font-weight: 800; text-align: center; word-break: keep-all; }
+  .where.go-c { color: #0f6e56; } .where.home-c { color: #c2541f; }
+
+  .warn {
+    background: #fff4d6; color: #6b4a00; border: 2px dashed #d9a400; border-radius: 12px;
+    padding: 10px 12px; font-size: 15px; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 번호가 아직 가짜일 때만 보이는 안내 (실제 번호를 넣으면 자동으로 사라짐) -->
+  <div class="warn" id="warn" hidden></div>
+
+  <!-- 1. 첫 화면 -->
+  <section class="screen on" id="s-main">
+    <div class="hello" id="hello"></div>
+    <div class="sub">어디 가세요?</div>
+    <button class="big go" onclick="pick('go')">
+      <span class="ico">🏥</span><span class="t">병원 갈 때</span><span class="r" id="route-go"></span>
+    </button>
+    <button class="big home" onclick="pick('home')">
+      <span class="ico">🏠</span><span class="t">집에 올 때</span><span class="r" id="route-home"></span>
+    </button>
+    <a class="family" id="family1">📞 <span id="family-label1"></span>에게 전화</a>
+  </section>
+
+  <!-- 2. 말할 내용 + 전화 걸기 -->
+  <section class="screen" id="s-say">
+    <div class="where" id="where"></div>
+    <div class="say">전화하시면 이렇게 말씀하세요</div>
+    <div class="card" id="script"></div>
+    <a class="call" id="call" onclick="afterCall()">📞 전화 걸기</a>
+    <button class="back" onclick="show('s-main')">← 처음으로</button>
+  </section>
+
+  <!-- 3. 전화 후 -->
+  <section class="screen" id="s-after">
+    <div class="hello">택시 잡으셨어요?</div>
+    <button class="big go" onclick="show('s-main')"><span class="ico">👍</span><span class="t">네, 잡았어요</span></button>
+    <a class="call" id="again" style="background:#185fa5">📞 다시 걸기</a>
+    <a class="family" id="family2">📞 <span id="family-label2"></span>에게 전화</a>
+  </section>
+
+</div>
+
+<script>
+/* =========================================================
+   여기만 고치면 됩니다 (실제 정보로 바꿔 넣는 곳)
+   ========================================================= */
+const CONFIG = {
+  // 두 분 정보. 주소 끝에 ?who=grandpa 를 붙이면 할아버지 화면이 됩니다.
+  people: {
+    grandma: { call: "할머니", name: "김순자" },   // 가짜 이름
+    grandpa: { call: "할아버지", name: "박영수" }  // 가짜 이름
+  },
+  homeAddress: "전남 함평군 함평읍 ○○길 12",      // 가짜 주소
+  hospital:    "광주 ○○병원",                     // 가짜 병원
+  wheelchair:  "휠체어 탑니다",                    // 두 분 모두 휠체어 이용
+  memberNo:    "",                                 // 회원번호 있으면 입력, 없으면 비워두기
+
+  // 센터 번호: 아직 확인 전이라 가짜 번호 (확인 후 바꾸기)
+  centerGo:   { label: "전라남도 센터", phone: "000-0000-0000" },  // 함평 → 광주
+  centerHome: { label: "광주 센터",     phone: "000-0000-0000" },  // 광주 → 함평
+
+  // 도움 요청할 가족 (지금은 엄마, 나중에 외삼촌으로 바꾸기)
+  family: { label: "딸", phone: "010-0000-0000" }
+};
+/* ========================================================= */
+
+const who = new URLSearchParams(location.search).get("who") === "grandpa" ? "grandpa" : "grandma";
+const me = CONFIG.people[who];
+const $ = id => document.getElementById(id);
+const tel = n => "tel:" + n.replace(/[^0-9+]/g, "");
+const fake = n => /^0{3}|0000-0000$/.test(n);
+let current = null;
+
+$("hello").textContent = me.call + ", 안녕하세요";
+$("route-go").textContent = "함평 → 광주";
+$("route-home").textContent = "광주 → 함평";
+["1","2"].forEach(i => {
+  $("family-label" + i).textContent = CONFIG.family.label;
+  $("family" + i).href = tel(CONFIG.family.phone);
+});
+
+const missing = [];
+if (fake(CONFIG.centerGo.phone))   missing.push("전남 센터 번호");
+if (fake(CONFIG.centerHome.phone)) missing.push("광주 센터 번호");
+if (fake(CONFIG.family.phone))     missing.push("가족 번호");
+if (missing.length) {
+  $("warn").hidden = false;
+  $("warn").textContent = "시제품입니다. 아직 가짜인 정보: " + missing.join(", ") + " (CONFIG에서 바꾸면 이 안내가 사라집니다)";
+}
+
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id));
+  window.scrollTo(0, 0);
+}
+
+function pick(dir) {
+  if (navigator.vibrate) navigator.vibrate(40);
+  current = dir === "go" ? CONFIG.centerGo : CONFIG.centerHome;
+  const from = dir === "go" ? CONFIG.homeAddress : CONFIG.hospital;
+  const to   = dir === "go" ? CONFIG.hospital    : CONFIG.homeAddress;
+
+  $("where").textContent = current.label + "에 전화합니다";
+  $("where").className = "where " + (dir === "go" ? "go-c" : "home-c");
+
+  const rows = [
+    ["이름", me.name],
+    ["출발", from],
+    ["도착", to],
+    ["휠체어", CONFIG.wheelchair]
+  ];
+  if (CONFIG.memberNo) rows.push(["회원번호", CONFIG.memberNo]);
+  $("script").innerHTML = rows.map(([k, v]) =>
+    `<div class="row"><span class="k">${k}</span><span class="v">${v}</span></div>`).join("");
+
+  $("call").href = tel(current.phone);
+  $("again").href = tel(current.phone);
+  show("s-say");
+}
+
+function afterCall() {
+  // 전화 앱이 열린 뒤 돌아오면 '택시 잡으셨어요?' 화면이 보이도록
+  setTimeout(() => show("s-after"), 800);
+}
+</script>
+</body>
+</html>
