@@ -68,7 +68,7 @@
     <div class="hello">누구에게 걸까요?</div>
     <div id="family-list" style="display:flex;flex-direction:column;gap:12px"></div>
     <button class="add" onclick="openAdd()">+ 다른 번호 추가</button>
-    <button class="back" onclick="show('s-main')">← 처음으로</button>
+    <!-- '처음으로' 버튼 삭제: 전화를 걸면 자동으로 첫 화면으로 돌아감. 그냥 나갈 때는 폰의 뒤로가기 -->
   </section>
 
   <!-- 4. 다른 번호 추가 -->
@@ -143,6 +143,21 @@ function persist() {
 function show(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id));
   window.scrollTo(0, 0);
+  /* 첫 화면이 아닌 곳에 있을 때 폰의 '뒤로가기'를 누르면 첫 화면으로 */
+  try {
+    if (id === "s-main") { if (history.state && history.state.sub) history.replaceState(null, ""); }
+    else if (history.state && history.state.sub) history.replaceState({ sub: id }, "");
+    else history.pushState({ sub: id }, "");
+  } catch (e) {}
+}
+window.addEventListener("popstate", () => {
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === "s-main"));
+  window.scrollTo(0, 0);
+});
+/* 가족에게 전화를 걸면 전화 앱으로 넘어가고, 돌아오면 첫 화면 */
+function familyDialed() {
+  if (navigator.vibrate) navigator.vibrate(40);
+  setTimeout(() => { if (history.state && history.state.sub) history.back(); else show("s-main"); }, 400);
 }
 
 $("btn-go").href = tel(CENTER_GO);
@@ -155,7 +170,7 @@ function dialed(a) {
 function openFamily() {
   const list = (family || []).filter(f => digits(f.phone).length >= 7);
   $("family-list").innerHTML = list.length
-    ? list.map(f => `<a class="fam-btn" href="${tel(f.phone)}">📞 ${esc(f.label)}</a>`).join("")
+    ? list.map(f => `<a class="fam-btn" href="${tel(f.phone)}" onclick="familyDialed()">📞 ${esc(f.label)}</a>`).join("")
     : `<div class="empty">아직 등록된 번호가 없어요.</div>`;
   show("s-family");
 }
