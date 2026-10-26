@@ -171,11 +171,15 @@ function showExitToast() {
   $("exit-toast").hidden = false;
   if (navigator.vibrate) navigator.vibrate(40);
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    $("exit-toast").hidden = true;
-    try { if (!st().main && !st().sub) history.pushState({ main: true }, ""); } catch (e) {}
-  }, 3000);
+  toastTimer = setTimeout(() => { $("exit-toast").hidden = true; }, 3000);
 }
+/* 안드로이드(크롬·삼성 인터넷)는 화면을 누르지 않은 채 추가된 뒤로가기 기록을 건너뛴다.
+   그래서 '첫 화면' 칸은 할머니가 화면을 누르는 순간에 만든다. */
+function armGuard() {
+  try { if (!st().main && !st().sub) history.pushState({ main: true }, ""); } catch (e) {}
+}
+["pointerup", "touchend", "click", "keydown"].forEach(t =>
+  document.addEventListener(t, armGuard, { capture: true, passive: true }));
 window.addEventListener("popstate", () => {
   const s = st();
   if (s.sub) { render(s.sub); return; }
@@ -183,10 +187,7 @@ window.addEventListener("popstate", () => {
   if (s.main) { $("exit-toast").hidden = true; return; }
   showExitToast();          /* 시작 칸까지 왔음: 여기서 한 번 더 누르면 닫힘 */
 });
-try {
-  if (st().sub) history.replaceState({ main: true }, "");
-  else if (!st().main) history.pushState({ main: true }, "");
-} catch (e) {}
+try { if (st().sub) history.replaceState({ main: true }, ""); } catch (e) {}
 
 /* 가족에게 전화를 걸면 전화 앱으로 넘어가고, 돌아오면 첫 화면 */
 function familyDialed() {
