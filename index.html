@@ -42,6 +42,7 @@
   .form .pair { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; }
   .form .save { background: #0f6e56; color: #fff; border: 0; border-radius: 14px; padding: 18px; font-size: 22px; font-weight: 700; font-family: inherit; cursor: pointer; }
   .form .err { color: #a32d2d; font-size: 16px; min-height: 1em; }
+  .toast { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); width: calc(100% - 36px); max-width: 444px; background: #1a1a18; color: #fff; border-radius: 20px; padding: 24px 16px; font-size: 28px; font-weight: 800; line-height: 1.35; text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,.3); z-index: 10; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -102,6 +103,8 @@
 
 </div>
 
+<div class="toast" id="exit-toast" hidden>한 번 더 누르면<br>앱이 닫혀요</div>
+
 <script>
 /* 센터 번호 (공개 번호) */
 const CENTER_GO   = "1899-1110";  // 병원 갈 때: 전남 센터
@@ -140,24 +143,55 @@ try { const raw = localStorage.getItem(KEY); if (raw) family = JSON.parse(raw); 
 function persist() {
   try { localStorage.setItem(KEY, JSON.stringify(family)); return true; } catch (e) { return false; }
 }
-function show(id) {
+/* 화면 전환과 폰의 '뒤로가기'
+   기록은 항상 [시작] → [첫 화면] → (다른 화면 1칸)까지만 쌓이게 한다.
+   - 다른 화면에서 뒤로가기: 첫 화면으로
+   - 첫 화면에서 뒤로가기 1번: "한 번 더 누르면 닫혀요" 안내
+   - 3초 안에 1번 더: 앱 닫힘 */
+const st = () => history.state || {};
+function render(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id));
   window.scrollTo(0, 0);
-  /* 첫 화면이 아닌 곳에 있을 때 폰의 '뒤로가기'를 누르면 첫 화면으로 */
+}
+function show(id) {
+  if (id === "s-main") return home();
   try {
-    if (id === "s-main") { if (history.state && history.state.sub) history.replaceState(null, ""); }
-    else if (history.state && history.state.sub) history.replaceState({ sub: id }, "");
+    if (st().sub) history.replaceState({ sub: id }, "");
     else history.pushState({ sub: id }, "");
   } catch (e) {}
+  render(id);
+}
+function home() {
+  if (st().sub) { try { history.back(); return; } catch (e) {} }
+  render("s-main");
+}
+
+let toastTimer = null;
+function showExitToast() {
+  $("exit-toast").hidden = false;
+  if (navigator.vibrate) navigator.vibrate(40);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    $("exit-toast").hidden = true;
+    try { if (!st().main && !st().sub) history.pushState({ main: true }, ""); } catch (e) {}
+  }, 3000);
 }
 window.addEventListener("popstate", () => {
-  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === "s-main"));
-  window.scrollTo(0, 0);
+  const s = st();
+  if (s.sub) { render(s.sub); return; }
+  render("s-main");
+  if (s.main) { $("exit-toast").hidden = true; return; }
+  showExitToast();          /* 시작 칸까지 왔음: 여기서 한 번 더 누르면 닫힘 */
 });
+try {
+  if (st().sub) history.replaceState({ main: true }, "");
+  else if (!st().main) history.pushState({ main: true }, "");
+} catch (e) {}
+
 /* 가족에게 전화를 걸면 전화 앱으로 넘어가고, 돌아오면 첫 화면 */
 function familyDialed() {
   if (navigator.vibrate) navigator.vibrate(40);
-  setTimeout(() => { if (history.state && history.state.sub) history.back(); else show("s-main"); }, 400);
+  setTimeout(home, 400);
 }
 
 $("btn-go").href = tel(CENTER_GO);
