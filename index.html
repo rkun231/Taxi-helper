@@ -191,7 +191,7 @@ try { if (st().sub) history.replaceState({ main: true }, ""); } catch (e) {}
 
 /* 버튼 사용 횟수 기록: 어떤 버튼인지와 폰마다 만든 임의 번호만 보낸다 (전화번호는 보내지 않음).
    주소 끝에 ?test 가 붙어 있으면 보내지 않는다. 화면에는 아무것도 보이지 않는다. */
-const LOG_URL = "";
+const LOG_URL = "https://script.google.com/macros/s/AKfycbzgXoYzc1xjgZIYr5_EXj9M71vmLdVzSpPoQ-ydiXTNqqc81gk729DoHn242f1P4Z9i3Q/exec";
 const LOG_OFF = new URLSearchParams(location.search).has("test");
 function deviceId() {
   try {
