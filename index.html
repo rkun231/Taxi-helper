@@ -59,8 +59,8 @@
     <a class="big home" id="btn-home" onclick="dialed(this)">
       <span class="ico">🏠</span><span class="t">집에 올 때</span><span class="r">병원에서 집으로 와요</span>
     </a>
-    <div style="margin-top:auto;display:flex;flex-direction:column;gap:10px">
-      <button class="fix" onclick="openSetup()">전화번호 고치기</button>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:36px">
+      <button class="fix" onclick="openSetup()">가족 번호 고치기</button>
       <button class="family" style="margin-top:0" onclick="openFamily()">📞 가족에게 전화</button>
     </div>
   </section>
@@ -106,6 +106,7 @@
 </div>
 
 <div class="toast" id="exit-toast" hidden>한 번 더 누르면<br>앱이 닫혀요</div>
+<div class="toast" id="save-toast" hidden>저장했어요</div>
 
 <script>
 /* 센터 번호 (공개 번호) */
@@ -142,6 +143,23 @@ document.addEventListener("input", e => {
 let family = null;
 try { const raw = localStorage.getItem(KEY); if (raw) family = JSON.parse(raw); } catch (e) {}
 
+const SAVE_FAIL = "저장하지 못했어요. 인터넷 앱의 비밀 모드를 꺼 주세요.";
+/* 번호 확인: 010 휴대폰은 11자리여야 함. 센터(1899-1110 같은 8자리)나 집 전화(02-, 062-)는 그대로 허용.
+   비어 있으면 괜찮고, 1~6자리처럼 너무 짧으면 막음 */
+function badNumber(n) {
+  const d = digits(n);
+  if (!d) return "";
+  if (d.startsWith("010") && d.length !== 11) return "자리 수가 맞지 않아요";
+  if (d.length < 7) return "너무 짧아요";
+  return "";
+}
+let saveTimer = null;
+function showSaved() {
+  const t = $("save-toast");
+  t.hidden = false;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { t.hidden = true; }, 2000);
+}
 function persist() {
   try { localStorage.setItem(KEY, JSON.stringify(family)); return true; } catch (e) { return false; }
 }
@@ -233,19 +251,22 @@ function openFamily() {
   const list = (family || []).filter(f => digits(f.phone).length >= 7);
   $("family-list").innerHTML = list.length
     ? list.map(f => `<a class="fam-btn" href="${tel(f.phone)}" onclick="familyDialed()">📞 ${esc(f.label)}</a>`).join("")
-    : `<div class="empty">아직 등록된 번호가 없어요.</div>`;
+    : `<div class="empty">아직 등록된 번호가 없어요.<br>가족에게 번호를 넣어 달라고 하세요.</div>`;
   show("s-family");
 }
 
 function openAdd() { $("a-label").value = ""; $("a-phone").value = ""; $("a-err").textContent = ""; show("s-add"); }
 function saveAdd() {
   const label = $("a-label").value.trim(), phone = $("a-phone").value.trim();
-  if (!label || digits(phone).length < 7) { $("a-err").textContent = "이름과 전화번호를 모두 넣어 주세요."; return; }
+  $("a-err").textContent = "";
+  if (!label || !digits(phone)) { $("a-err").textContent = "이름과 전화번호를 모두 넣어 주세요."; return; }
+  const bad = badNumber(phone);
+  if (bad) { $("a-err").textContent = `번호가 ${bad}. 다시 확인해 주세요.`; return; }
   family = family || FAMILY_DEFAULT.map(f => ({ ...f }));
   const slot = family.find(f => f.label === label && !digits(f.phone));
   if (slot) slot.phone = digits(phone);          // 빈 '아들' 칸이 있으면 그 칸에 채움
   else family.push({ label, phone: digits(phone) });
-  if (!persist()) { $("a-err").textContent = "저장하지 못했어요."; return; }
+  if (!persist()) { $("a-err").textContent = SAVE_FAIL; return; }
   openFamily();
 }
 
@@ -270,10 +291,20 @@ function addRow() {
 function saveSetup() {
   const labels = [...$("f-family").querySelectorAll(".fl")];
   const phones = [...$("f-family").querySelectorAll(".fp")];
+  $("f-err").textContent = "";
+  for (let i = 0; i < phones.length; i++) {
+    const bad = badNumber(phones[i].value);
+    if (bad) {
+      $("f-err").textContent = `'${labels[i].value.trim() || "가족"}' 번호가 ${bad}. 다시 확인해 주세요.`;
+      phones[i].focus();
+      return;
+    }
+  }
   family = labels.map((l, i) => ({ label: l.value.trim() || "가족", phone: digits(phones[i].value) }))
             .filter((f, i) => i < FAMILY_DEFAULT.length || digits(f.phone).length >= 7);
-  if (!persist()) { $("f-err").textContent = "저장하지 못했어요. 인터넷 앱의 비밀 모드를 꺼 주세요."; return; }
+  if (!persist()) { $("f-err").textContent = SAVE_FAIL; return; }
   show("s-main");
+  showSaved();
 }
 
 show("s-main");
