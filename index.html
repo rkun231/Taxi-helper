@@ -38,19 +38,22 @@
   .empty { background: #fff4d6; color: #6b4a00; border: 2px dashed #d9a400; border-radius: 16px; padding: 18px; font-size: 22px; text-align: center; }
 
   .form h1 { font-size: 24px; }
-  .form p.note { font-size: 16px; color: #55544f; line-height: 1.6; }
-  .form .box { border: 1px solid #d3d1c7; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: #fff; }
-  .form label { font-size: 16px; color: #44443f; display: flex; flex-direction: column; gap: 6px; }
+  .form p.note { font-size: 18px; color: #55544f; line-height: 1.45; }
+  .form .box { border: 1px solid #d3d1c7; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #fff; }
+  .form label { font-size: 18px; color: #44443f; display: flex; flex-direction: column; gap: 6px; }
   .form input { font-size: 20px; padding: 12px; border: 1px solid #b4b2a9; border-radius: 10px; font-family: inherit; background: #fff; color: #1a1a18; width: 100%; min-width: 0; }
+  .form input::placeholder { color: #6b6a65; opacity: 1; }   /* 빨간 오류 배경 위에서도 4.5:1 이상 */
   .form .pair { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; }
   .form .save { background: #0f6e56; color: #fff; border: 0; border-radius: 14px; padding: 18px; font-size: 22px; font-weight: 700; font-family: inherit; cursor: pointer; }
-  .form .err { color: #a32d2d; font-size: 16px; min-height: 1em; }
-  .form .box .err { font-size: 18px; font-weight: 700; }
+  /* 저장·취소를 한 줄에: 저장이 넓게 왼쪽, 취소가 오른쪽 (설정 화면 길이 줄이기) */
+  .form .btns { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 10px; }
+  .form .err { color: #a32d2d; font-size: 18px; font-weight: 700; }
+  .form .err:empty { display: none; }        /* 오류가 없을 때는 빈 줄을 차지하지 않게 */
   .form input[aria-invalid="true"] { border: 2px solid #a32d2d; background: #fff6f6; }
   /* 키보드로 옮겨 다닐 때 지금 어디에 있는지 굵게 보이게 */
   a:focus-visible, button:focus-visible, input:focus-visible { outline: 4px solid #1a1a18; outline-offset: 3px; }
   /* 작은 폰(세로 740px 이하): 글자 크기는 그대로, 아이콘·여백만 줄여 첫 화면이 한 화면에 들어오게 */
-  @media (max-height: 740px) {
+  @media (max-height: 760px) {
     .app { padding-top: 12px; padding-bottom: 16px; }
     .hello { padding-top: 0; }
     .big { padding: 14px 16px; gap: 4px; }
@@ -63,7 +66,19 @@
     .big .ico { font-size: 32px; }
     .main-bottom { gap: 12px; }
   }
-  .toast { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); width: calc(100% - 36px); max-width: 444px; background: #1a1a18; color: #fff; border-radius: 20px; padding: 24px 16px; font-size: 28px; font-weight: 800; line-height: 1.35; text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,.3); z-index: 10; pointer-events: none; }
+  /* 아주 낮은 화면(주소창·내비게이션 바가 큰 경우): 글자 크기는 그대로, 줄 간격·여백만 더 줄임 */
+  @media (max-height: 540px) {
+    .app { padding-top: 8px; padding-bottom: 8px; }
+    .screen { gap: 8px; }
+    .hello { line-height: 1.2; }
+    .big { padding: 6px 16px; gap: 0; }
+    .big .ico { font-size: 26px; }
+    .big .t, .big .r { line-height: 1.2; }
+    .main-bottom { gap: 4px; }
+    .fix { min-height: 48px; padding: 6px 20px; }
+    .family { padding: 10px 18px; line-height: 1.2; }
+  }
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: calc(100% - 36px); max-width: 444px; background: #1a1a18; color: #fff; border-radius: 20px; padding: 24px 16px; font-size: 28px; font-weight: 800; line-height: 1.35; text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,.3); z-index: 10; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -98,15 +113,17 @@
     <h1>번호 추가</h1>
     <div class="box">
       <label>누구예요? (예: 외삼촌, 이웃집)
-        <input type="text" id="a-label" autocomplete="off">
+        <input type="text" id="a-label" autocomplete="off" aria-describedby="a-err">
       </label>
       <label>전화번호
         <input type="tel" id="a-phone" inputmode="tel" placeholder="010-0000-0000" aria-describedby="a-err">
       </label>
       <div class="err" id="a-err" role="alert"></div>
     </div>
-    <button class="save" onclick="saveAdd()">추가하기</button>
-    <button class="back" onclick="openFamily()">취소</button>
+    <div class="btns">
+      <button class="save" onclick="saveAdd()">추가하기</button>
+      <button class="back" onclick="openFamily()">취소</button>
+    </div>
   </section>
 
   <!-- 5. 처음 설정: 가족 번호만 -->
@@ -118,8 +135,10 @@
       <button class="add-row" onclick="addRow()">+ 다른 번호 추가</button>
     </div>
     <div class="err" id="f-err" role="alert"></div>
-    <button class="save" onclick="saveSetup()">저장하기</button>
-    <button class="back" id="f-cancel" onclick="show('s-main')">취소</button>
+    <div class="btns">
+      <button class="save" onclick="saveSetup()">저장하기</button>
+      <button class="back" id="f-cancel" onclick="show('s-main')">취소</button>
+    </div>
   </section>
 
 </div>
@@ -170,8 +189,15 @@ try {
   if (raw) {
     const v = JSON.parse(raw);
     /* 저장값이 목록 모양이 아니면(손상) 없는 것으로 본다. 항목도 {label, phone} 모양만 남긴다 */
-    if (Array.isArray(v)) family = v.filter(f => f && typeof f === "object")
-                                     .map(f => ({ label: String(f.label || "가족"), phone: digits(f.phone) }));
+    if (Array.isArray(v)) {
+      /* 호칭은 글자일 때만 쓴다(객체 등은 '가족'). 번호도 글자·숫자일 때만 */
+      const list = v.filter(f => f && typeof f === "object" && !Array.isArray(f))
+                    .map(f => ({ label: (typeof f.label === "string" && f.label.trim()) ? f.label.trim() : "가족",
+                                 phone: (typeof f.phone === "string" || typeof f.phone === "number") ? digits(f.phone) : "" }));
+      /* 정상 저장값은 기본 6줄 이상. 짧으면 빠진 기본 호칭 줄(빈 번호)을 뒤에 채워 설정 화면에 기본 6줄이 보이게 */
+      FAMILY_DEFAULT.forEach(d => { if (list.length < FAMILY_DEFAULT.length && !list.some(f => f.label === d.label)) list.push({ ...d }); });
+      family = list.length ? list : null;   // 비었으면 없는 것으로(설정 화면은 기본 6줄)
+    }
   }
 } catch (e) {}
 
@@ -312,10 +338,11 @@ function saveAdd() {
   openFamily();
 }
 
-function rowHtml(f) {
+function rowHtml(f, i) {
+  const n = i + 1;   // 스크린리더가 몇 번째 줄인지 알 수 있게
   return `<div class="pair">
-      <input type="text" class="fl" value="${esc(f.label)}" placeholder="누구" aria-label="호칭">
-      <input type="tel" class="fp" value="${esc(fmt(f.phone))}" inputmode="tel" placeholder="010-0000-0000" aria-label="번호">
+      <input type="text" class="fl" value="${esc(f.label)}" placeholder="누구" aria-label="${n}번째 줄 호칭">
+      <input type="tel" class="fp" value="${esc(fmt(f.phone))}" inputmode="tel" placeholder="010-0000-0000" aria-label="${n}번째 줄 번호">
     </div>`;
 }
 /* 설정 화면 오류 칸: 틀린 줄 바로 아래로 옮겨 보여 주고, 저장 실패 같은 공통 오류는 원래 자리(목록 아래) */
@@ -332,7 +359,7 @@ function openSetup() {
   show("s-setup");
 }
 function addRow() {
-  $("f-family").insertAdjacentHTML("beforeend", rowHtml({ label: "", phone: "" }));
+  $("f-family").insertAdjacentHTML("beforeend", rowHtml({ label: "", phone: "" }, $("f-family").querySelectorAll(".pair").length));
   const rows = $("f-family").querySelectorAll(".fl");
   rows[rows.length - 1].focus();
 }
@@ -341,10 +368,12 @@ function saveSetup() {
   const phones = [...$("f-family").querySelectorAll(".fp")];
   setupErr("");
   clearBad($("f-family"));
+  $("f-family").querySelectorAll('[aria-describedby]').forEach(el => el.removeAttribute("aria-describedby"));
   for (let i = 0; i < phones.length; i++) {
     const bad = badNumber(phones[i].value);
     if (bad) {
       setupErr(`'${labels[i].value.trim() || "가족"}' 번호가 ${bad}. 다시 확인해 주세요.`, phones[i].closest(".pair"));
+      phones[i].setAttribute("aria-describedby", "f-err");   // 틀린 칸에 오류 문구를 연결
       markBad(phones[i]);
       return;
     }
