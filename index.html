@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0f6e56">
 <meta name="mobile-web-app-capable" content="yes">
 <title>병원 택시</title>
@@ -32,8 +32,9 @@
   .call { background: #185fa5; color: #fff; border-radius: 22px; padding: 24px 16px; font-size: 34px; font-weight: 800; text-align: center; text-decoration: none; display: block; }
   .back { background: transparent; border: 2px solid #b4b2a9; color: #44443f; border-radius: 16px; padding: 14px; font-size: 22px; font-family: inherit; cursor: pointer; }
   .add { background: transparent; border: 2px dashed #888780; color: #44443f; border-radius: 16px; padding: 14px; font-size: 22px; font-family: inherit; cursor: pointer; }
-  .fix { align-self: center; background: transparent; border: 0; color: #55544f; font-size: 18px; text-decoration: underline; font-family: inherit; padding: 6px 12px; cursor: pointer; }
-  .form .add-row { background: transparent; border: 2px dashed #888780; color: #44443f; border-radius: 10px; padding: 12px; font-size: 18px; font-family: inherit; cursor: pointer; }
+  .main-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 36px; }
+  .fix { align-self: center; background: transparent; border: 0; color: #55544f; font-size: 21px; text-decoration: underline; text-underline-offset: 4px; font-family: inherit; min-height: 56px; padding: 10px 20px; cursor: pointer; }
+  .form .add-row { background: transparent; border: 2px dashed #888780; color: #44443f; border-radius: 16px; padding: 14px; font-size: 22px; font-family: inherit; cursor: pointer; }
   .empty { background: #fff4d6; color: #6b4a00; border: 2px dashed #d9a400; border-radius: 16px; padding: 18px; font-size: 22px; text-align: center; }
 
   .form h1 { font-size: 24px; }
@@ -44,6 +45,24 @@
   .form .pair { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; }
   .form .save { background: #0f6e56; color: #fff; border: 0; border-radius: 14px; padding: 18px; font-size: 22px; font-weight: 700; font-family: inherit; cursor: pointer; }
   .form .err { color: #a32d2d; font-size: 16px; min-height: 1em; }
+  .form .box .err { font-size: 18px; font-weight: 700; }
+  .form input[aria-invalid="true"] { border: 2px solid #a32d2d; background: #fff6f6; }
+  /* 키보드로 옮겨 다닐 때 지금 어디에 있는지 굵게 보이게 */
+  a:focus-visible, button:focus-visible, input:focus-visible { outline: 4px solid #1a1a18; outline-offset: 3px; }
+  /* 작은 폰(세로 740px 이하): 글자 크기는 그대로, 아이콘·여백만 줄여 첫 화면이 한 화면에 들어오게 */
+  @media (max-height: 740px) {
+    .app { padding-top: 12px; padding-bottom: 16px; }
+    .hello { padding-top: 0; }
+    .big { padding: 14px 16px; gap: 4px; }
+    .big .ico { font-size: 40px; }
+    .main-bottom { gap: 20px; }
+  }
+  @media (max-height: 600px) {
+    .screen { gap: 12px; }
+    .big { padding: 10px 16px; }
+    .big .ico { font-size: 32px; }
+    .main-bottom { gap: 12px; }
+  }
   .toast { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); width: calc(100% - 36px); max-width: 444px; background: #1a1a18; color: #fff; border-radius: 20px; padding: 24px 16px; font-size: 28px; font-weight: 800; line-height: 1.35; text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,.3); z-index: 10; pointer-events: none; }
 </style>
 </head>
@@ -53,15 +72,15 @@
   <!-- 1. 첫 화면: 누르면 바로 해당 센터로 전화 -->
   <section class="screen" id="s-main">
     <div class="hello" id="hello">어디로 모실까요?</div>
-    <a class="big go" id="btn-go" onclick="dialed(this)">
-      <span class="ico">🏥</span><span class="t">병원 갈 때</span><span class="r">집에서 병원으로 가요</span>
+    <a class="big go" id="btn-go" href="tel:18991110" onclick="dialed(this)">
+      <span class="ico" aria-hidden="true">🏥</span><span class="t">병원 갈 때</span><span class="r">집에서 병원으로 가요</span>
     </a>
-    <a class="big home" id="btn-home" onclick="dialed(this)">
-      <span class="ico">🏠</span><span class="t">집에 올 때</span><span class="r">병원에서 집으로 와요</span>
+    <a class="big home" id="btn-home" href="tel:16682222" onclick="dialed(this)">
+      <span class="ico" aria-hidden="true">🏠</span><span class="t">집에 올 때</span><span class="r">병원에서 집으로 와요</span>
     </a>
-    <div style="margin-top:auto;display:flex;flex-direction:column;gap:36px">
+    <div class="main-bottom">
       <button class="fix" onclick="openSetup()">가족 번호 고치기</button>
-      <button class="family" style="margin-top:0" onclick="openFamily()">📞 가족에게 전화</button>
+      <button class="family" style="margin-top:0" onclick="openFamily()"><span aria-hidden="true">📞</span> 가족에게 전화</button>
     </div>
   </section>
 
@@ -82,10 +101,10 @@
         <input type="text" id="a-label" autocomplete="off">
       </label>
       <label>전화번호
-        <input type="tel" id="a-phone" inputmode="tel" placeholder="010-0000-0000">
+        <input type="tel" id="a-phone" inputmode="tel" placeholder="010-0000-0000" aria-describedby="a-err">
       </label>
+      <div class="err" id="a-err" role="alert"></div>
     </div>
-    <div class="err" id="a-err"></div>
     <button class="save" onclick="saveAdd()">추가하기</button>
     <button class="back" onclick="openFamily()">취소</button>
   </section>
@@ -98,15 +117,15 @@
       <div id="f-family" style="display:flex;flex-direction:column;gap:10px"></div>
       <button class="add-row" onclick="addRow()">+ 다른 번호 추가</button>
     </div>
-    <div class="err" id="f-err"></div>
+    <div class="err" id="f-err" role="alert"></div>
     <button class="save" onclick="saveSetup()">저장하기</button>
     <button class="back" id="f-cancel" onclick="show('s-main')">취소</button>
   </section>
 
 </div>
 
-<div class="toast" id="exit-toast" hidden>한 번 더 누르면<br>앱이 닫혀요</div>
-<div class="toast" id="save-toast" hidden>저장했어요</div>
+<div class="toast" id="exit-toast" role="status" aria-live="polite" hidden>한 번 더 누르면<br>앱이 닫혀요</div>
+<div class="toast" id="save-toast" role="status" aria-live="polite" hidden>저장했어요</div>
 
 <script>
 /* 센터 번호 (공개 번호) */
@@ -139,10 +158,22 @@ function fmt(n) {
 document.addEventListener("input", e => {
   const el = e.target;
   if (el.matches && el.matches('input[type="tel"]')) el.value = fmt(el.value);
+  if (el.removeAttribute) el.removeAttribute("aria-invalid");   // 고치기 시작하면 빨간 테두리 해제
 });
+/* 틀린 칸: 빨간 테두리 + 그 칸으로 이동 */
+function markBad(el) { el.setAttribute("aria-invalid", "true"); el.focus(); }
+function clearBad(root) { root.querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute("aria-invalid")); }
 
 let family = null;
-try { const raw = localStorage.getItem(KEY); if (raw) family = JSON.parse(raw); } catch (e) {}
+try {
+  const raw = localStorage.getItem(KEY);
+  if (raw) {
+    const v = JSON.parse(raw);
+    /* 저장값이 목록 모양이 아니면(손상) 없는 것으로 본다. 항목도 {label, phone} 모양만 남긴다 */
+    if (Array.isArray(v)) family = v.filter(f => f && typeof f === "object")
+                                     .map(f => ({ label: String(f.label || "가족"), phone: digits(f.phone) }));
+  }
+} catch (e) {}
 
 const SAVE_FAIL = "저장하지 못했어요. 인터넷 앱의 비밀 모드를 꺼 주세요.";
 /* 번호 확인: 010 휴대폰은 11자리여야 함. 센터(1899-1110 같은 8자리)나 집 전화(02-, 062-)는 그대로 허용.
@@ -255,18 +286,24 @@ function dialed(a) {
 function openFamily() {
   const list = (family || []).filter(f => usable(f.phone));
   $("family-list").innerHTML = list.length
-    ? list.map(f => `<a class="fam-btn" href="${tel(f.phone)}" onclick="familyDialed()">📞 ${esc(f.label)}</a>`).join("")
+    ? list.map(f => `<a class="fam-btn" href="${tel(f.phone)}" onclick="familyDialed()"><span aria-hidden="true">📞</span> ${esc(f.label)}</a>`).join("")
     : `<div class="empty">아직 등록된 번호가 없어요.<br>가족에게 번호를 넣어 달라고 하세요.</div>`;
   show("s-family");
 }
 
-function openAdd() { $("a-label").value = ""; $("a-phone").value = ""; $("a-err").textContent = ""; show("s-add"); }
+function openAdd() { $("a-label").value = ""; $("a-phone").value = ""; $("a-err").textContent = ""; clearBad($("s-add")); show("s-add"); }
 function saveAdd() {
   const label = $("a-label").value.trim(), phone = $("a-phone").value.trim();
   $("a-err").textContent = "";
-  if (!label || !digits(phone)) { $("a-err").textContent = "이름과 전화번호를 모두 넣어 주세요."; return; }
+  clearBad($("s-add"));
+  if (!label || !digits(phone)) {
+    $("a-err").textContent = "이름과 전화번호를 모두 넣어 주세요.";
+    if (!digits(phone)) $("a-phone").setAttribute("aria-invalid", "true");
+    markBad(label ? $("a-phone") : $("a-label"));
+    return;
+  }
   const bad = badNumber(phone);
-  if (bad) { $("a-err").textContent = `번호가 ${bad}. 다시 확인해 주세요.`; return; }
+  if (bad) { $("a-err").textContent = `번호가 ${bad}. 다시 확인해 주세요.`; markBad($("a-phone")); return; }
   family = family || FAMILY_DEFAULT.map(f => ({ ...f }));
   const slot = family.find(f => f.label === label && !digits(f.phone));
   if (slot) slot.phone = digits(phone);          // 빈 '아들' 칸이 있으면 그 칸에 채움
@@ -281,11 +318,17 @@ function rowHtml(f) {
       <input type="tel" class="fp" value="${esc(fmt(f.phone))}" inputmode="tel" placeholder="010-0000-0000" aria-label="번호">
     </div>`;
 }
+/* 설정 화면 오류 칸: 틀린 줄 바로 아래로 옮겨 보여 주고, 저장 실패 같은 공통 오류는 원래 자리(목록 아래) */
+function setupErr(msg, row) {
+  const e = $("f-err");
+  if (row) row.after(e); else $("s-setup").querySelector(".box").after(e);
+  e.textContent = msg;
+}
 function openSetup() {
+  setupErr("");                                  // 오류 칸을 목록 밖 원래 자리로 (목록을 다시 그리기 전에)
   const v = family || FAMILY_DEFAULT;
   $("f-family").innerHTML = v.map(rowHtml).join("");
   $("f-cancel").hidden = false;
-  $("f-err").textContent = "";
   show("s-setup");
 }
 function addRow() {
@@ -296,18 +339,19 @@ function addRow() {
 function saveSetup() {
   const labels = [...$("f-family").querySelectorAll(".fl")];
   const phones = [...$("f-family").querySelectorAll(".fp")];
-  $("f-err").textContent = "";
+  setupErr("");
+  clearBad($("f-family"));
   for (let i = 0; i < phones.length; i++) {
     const bad = badNumber(phones[i].value);
     if (bad) {
-      $("f-err").textContent = `'${labels[i].value.trim() || "가족"}' 번호가 ${bad}. 다시 확인해 주세요.`;
-      phones[i].focus();
+      setupErr(`'${labels[i].value.trim() || "가족"}' 번호가 ${bad}. 다시 확인해 주세요.`, phones[i].closest(".pair"));
+      markBad(phones[i]);
       return;
     }
   }
   family = labels.map((l, i) => ({ label: l.value.trim() || "가족", phone: digits(phones[i].value) }))
             .filter((f, i) => i < FAMILY_DEFAULT.length || usable(f.phone));
-  if (!persist()) { $("f-err").textContent = SAVE_FAIL; return; }
+  if (!persist()) { setupErr(SAVE_FAIL); return; }
   show("s-main");
   showSaved();
 }
