@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
 <style>
   [hidden] { display: none !important; }
+  .guide { display: inline-flex; align-items: center; min-height: 48px; padding: 0 4px; font-size: 18px; font-weight: 700; color: #0f6e56; text-decoration: underline; text-underline-offset: 4px; align-self: flex-start; }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { min-height: 100%; }
   body { font-family: -apple-system, "Noto Sans KR", "Malgun Gothic", sans-serif; background: #f6f5f1; color: #1a1a18; display: flex; justify-content: center; }
@@ -130,6 +131,7 @@
   <section class="screen form" id="s-setup">
     <h1>가족 번호 설정</h1>
     <p class="note">번호는 이 휴대폰 안에만 저장됩니다. 비워둔 사람은 화면에 나오지 않아요.</p>
+    <a class="guide" href="https://rkun231.github.io/taxi-portfolio/assets/guide-family.webp" target="_blank" rel="noopener">사용 설명서 보기 ↗</a>
     <div class="box">
       <div id="f-family" style="display:flex;flex-direction:column;gap:10px"></div>
       <button class="add-row" onclick="addRow()">+ 다른 번호 추가</button>
