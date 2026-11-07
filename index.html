@@ -48,6 +48,19 @@
   .form .save { background: #0f6e56; color: #fff; border: 0; border-radius: 14px; padding: 18px; font-size: 22px; font-weight: 700; font-family: inherit; cursor: pointer; }
   /* 저장·취소를 한 줄에: 저장이 넓게 왼쪽, 취소가 오른쪽 (설정 화면 길이 줄이기) */
   .form .btns { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 10px; }
+  /* 설정 화면: '+ 다른 번호 추가' 옆 '편집' 버튼, 편집 중에는 줄마다 둥근 X 버튼 */
+  .form .tools { display: flex; align-items: center; gap: 8px; }
+  .form .tools .add-row { flex: 1 1 auto; min-width: 0; }
+  .edit-btn { background: transparent; border: 0; font-family: inherit; cursor: pointer; align-self: center; padding: 0 8px; flex: 0 0 auto; }
+  .form .del { display: none; width: 48px; height: 48px; border-radius: 50%; border: 2px solid #a32d2d; background: #fff; color: #a32d2d; font-size: 22px; font-weight: 800; font-family: inherit; line-height: 1; cursor: pointer; align-self: center; }
+  #s-setup.editing .del { display: block; }
+  /* 편집 중: X 자리를 내려고 호칭 칸·여백만 좁힘 (360px에서도 번호 11자리가 다 보이게) */
+  #s-setup.editing .pair { grid-template-columns: 5em minmax(0, 1fr) 48px; gap: 6px; }
+  #s-setup.editing .pair input { padding-left: 6px; padding-right: 4px; }
+  /* 저장·취소 줄은 화면 아래에 붙여 둔다 (목록이 길어도 스크롤 없이 보이게) */
+  #s-setup .btns { position: sticky; bottom: 0; z-index: 5; margin: 0 -18px; padding: 10px 18px calc(10px + env(safe-area-inset-bottom, 0px)); background: #f6f5f1; border-top: 1px solid #d3d1c7; }
+  /* 칸으로 이동할 때 아래 저장 줄에 가려지지 않게 */
+  #s-setup input, #s-setup .box button { scroll-margin-bottom: 110px; }
   .form .err { color: #a32d2d; font-size: 18px; font-weight: 700; }
   .form .err:empty { display: none; }        /* 오류가 없을 때는 빈 줄을 차지하지 않게 */
   .form input[aria-invalid="true"] { border: 2px solid #a32d2d; background: #fff6f6; }
@@ -78,6 +91,7 @@
     .main-bottom { gap: 4px; }
     .fix { min-height: 48px; padding: 6px 20px; }
     .family { padding: 10px 18px; line-height: 1.2; }
+    #s-setup .btns { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
   }
   .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: calc(100% - 36px); max-width: 444px; background: #1a1a18; color: #fff; border-radius: 20px; padding: 24px 16px; font-size: 28px; font-weight: 800; line-height: 1.35; text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,.3); z-index: 10; pointer-events: none; }
 </style>
@@ -134,7 +148,10 @@
     <a class="guide" href="https://rkun231.github.io/taxi-portfolio/assets/guide-family.webp" target="_blank" rel="noopener">사용 설명서 보기 ↗</a>
     <div class="box">
       <div id="f-family" style="display:flex;flex-direction:column;gap:10px"></div>
-      <button class="add-row" onclick="addRow()">+ 다른 번호 추가</button>
+      <div class="tools">
+        <button class="add-row" onclick="addRow()">+ 다른 번호 추가</button>
+        <button class="guide edit-btn" id="f-edit" type="button" onclick="setEdit(!$('s-setup').classList.contains('editing'))">편집</button>
+      </div>
     </div>
     <div class="err" id="f-err" role="alert"></div>
     <div class="btns">
@@ -196,8 +213,16 @@ try {
       const list = v.filter(f => f && typeof f === "object" && !Array.isArray(f))
                     .map(f => ({ label: (typeof f.label === "string" && f.label.trim()) ? f.label.trim() : "가족",
                                  phone: (typeof f.phone === "string" || typeof f.phone === "number") ? digits(f.phone) : "" }));
-      /* 정상 저장값은 기본 6줄 이상. 짧으면 빠진 기본 호칭 줄(빈 번호)을 뒤에 채워 설정 화면에 기본 6줄이 보이게 */
-      FAMILY_DEFAULT.forEach(d => { if (list.length < FAMILY_DEFAULT.length && !list.some(f => f.label === d.label)) list.push({ ...d }); });
+      /* 정상 저장값은 기본 6줄 이상. 짧으면(옛 저장값 등) 기본 6줄을 원래 순서대로 세우고, 저장돼 있던 같은 호칭은 그 자리에 넣고,
+         기본에 없는 호칭(예: 외삼촌)은 그 아래에 붙인다. (예전엔 6줄에서 멈춰 '막내딸'이 빠졌음) */
+      if (list.length && list.length < FAMILY_DEFAULT.length) {
+        const rest = list.slice();
+        const base = FAMILY_DEFAULT.map(d => {
+          const k = rest.findIndex(f => f.label === d.label);
+          return k >= 0 ? rest.splice(k, 1)[0] : { ...d };
+        });
+        list.splice(0, list.length, ...base, ...rest);
+      }
       family = list.length ? list : null;   // 비었으면 없는 것으로(설정 화면은 기본 6줄)
     }
   }
@@ -235,6 +260,7 @@ function persist() {
 const st = () => history.state || {};
 function render(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id));
+  if (id !== "s-setup") setEdit(false);          // 설정 화면을 떠나면 편집 끝
   window.scrollTo(0, 0);
 }
 function show(id) {
@@ -345,8 +371,39 @@ function rowHtml(f, i) {
   return `<div class="pair">
       <input type="text" class="fl" value="${esc(f.label)}" placeholder="누구" aria-label="${n}번째 줄 호칭">
       <input type="tel" class="fp" value="${esc(fmt(f.phone))}" inputmode="tel" placeholder="010-0000-0000" aria-label="${n}번째 줄 번호">
+      <button class="del" type="button" onclick="delRow(this)" aria-label="${esc(delName(f.label, n))}">✕</button>
     </div>`;
 }
+/* 편집(X) 버튼: 기본 6줄은 호칭·번호만 비우고 줄은 남김, '+ 다른 번호 추가'로 늘린 줄은 줄째 지움.
+   저장하기를 눌러야 실제로 바뀜 (취소하면 그대로) */
+function delName(label, n) { return `이 줄 지우기 (${String(label || "").trim() || n + "번째 줄"})`; }
+function setEdit(on) {
+  $("s-setup").classList.toggle("editing", on);
+  $("f-edit").textContent = on ? "완료" : "편집";
+}
+function renumber() {
+  $("f-family").querySelectorAll(".pair").forEach((row, i) => {
+    row.querySelector(".fl").setAttribute("aria-label", `${i + 1}번째 줄 호칭`);
+    row.querySelector(".fp").setAttribute("aria-label", `${i + 1}번째 줄 번호`);
+    row.querySelector(".del").setAttribute("aria-label", delName(row.querySelector(".fl").value, i + 1));
+  });
+}
+function delRow(btn) {
+  const row = btn.closest(".pair");
+  const rows = [...$("f-family").querySelectorAll(".pair")];
+  const i = rows.indexOf(row);
+  if ($("f-err").previousElementSibling === row) setupErr("");   // 이 줄 밑 오류 문구도 치움
+  if (i < FAMILY_DEFAULT.length) {
+    row.querySelectorAll("input").forEach(el => { el.value = ""; el.removeAttribute("aria-invalid"); el.removeAttribute("aria-describedby"); });
+    renumber();
+    btn.focus();
+  } else {
+    row.remove();
+    renumber();
+    $("f-family").querySelectorAll(".del")[i - 1].focus();   // 바로 위 줄의 X로
+  }
+}
+$("f-family").addEventListener("input", e => { if (e.target.classList.contains("fl")) renumber(); });
 /* 설정 화면 오류 칸: 틀린 줄 바로 아래로 옮겨 보여 주고, 저장 실패 같은 공통 오류는 원래 자리(목록 아래) */
 function setupErr(msg, row) {
   const e = $("f-err");
@@ -357,6 +414,7 @@ function openSetup() {
   setupErr("");                                  // 오류 칸을 목록 밖 원래 자리로 (목록을 다시 그리기 전에)
   const v = family || FAMILY_DEFAULT;
   $("f-family").innerHTML = v.map(rowHtml).join("");
+  setEdit(false);
   $("f-cancel").hidden = false;
   show("s-setup");
 }
@@ -368,6 +426,7 @@ function addRow() {
 function saveSetup() {
   const labels = [...$("f-family").querySelectorAll(".fl")];
   const phones = [...$("f-family").querySelectorAll(".fp")];
+  setEdit(false);
   setupErr("");
   clearBad($("f-family"));
   $("f-family").querySelectorAll('[aria-describedby]').forEach(el => el.removeAttribute("aria-describedby"));
@@ -379,6 +438,19 @@ function saveSetup() {
       markBad(phones[i]);
       return;
     }
+  }
+  /* 번호가 있는 줄끼리 호칭이 같으면 막음 (가족 화면에 같은 이름 버튼이 두 개 생기지 않게) */
+  const seen = new Set();
+  for (let i = 0; i < labels.length; i++) {
+    if (!digits(phones[i].value)) continue;
+    const name = labels[i].value.trim() || "가족";
+    if (seen.has(name)) {
+      setupErr("같은 이름이 두 번 있어요. 하나를 '큰아들'처럼 바꿔 주세요", labels[i].closest(".pair"));
+      labels[i].setAttribute("aria-describedby", "f-err");
+      markBad(labels[i]);
+      return;
+    }
+    seen.add(name);
   }
   family = labels.map((l, i) => ({ label: l.value.trim() || "가족", phone: digits(phones[i].value) }))
             .filter((f, i) => i < FAMILY_DEFAULT.length || usable(f.phone));
