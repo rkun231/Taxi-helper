@@ -285,7 +285,11 @@ function showExitToast() {
 }
 /* 안드로이드(크롬·삼성 인터넷)는 화면을 누르지 않은 채 추가된 뒤로가기 기록을 건너뛴다.
    그래서 '첫 화면' 칸은 할머니가 화면을 누르는 순간에 만든다. */
+/* 아이폰·아이패드: 홈 화면 앱은 '뒤로'(왼쪽 끝 밀기)로 닫을 수 없고, 밀기 동작이 pointerup 으로도 들어와
+   '첫 화면' 칸을 다시 만든다. 그래서 아이폰에서는 '첫 화면' 칸과 닫힘 안내를 쓰지 않는다. */
+const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 function armGuard() {
+  if (IOS) return;
   try { if (!st().main && !st().sub) history.pushState({ main: true }, ""); } catch (e) {}
 }
 ["pointerup", "touchend", "click", "keydown"].forEach(t =>
@@ -294,7 +298,7 @@ window.addEventListener("popstate", () => {
   const s = st();
   if (s.sub) { render(s.sub); return; }
   render("s-main");
-  if (s.main) { $("exit-toast").hidden = true; return; }
+  if (s.main || IOS) { $("exit-toast").hidden = true; return; }
   showExitToast();          /* 시작 칸까지 왔음: 여기서 한 번 더 누르면 닫힘 */
 });
 try { if (st().sub) history.replaceState({ main: true }, ""); } catch (e) {}
